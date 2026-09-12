@@ -1,6 +1,10 @@
 import { Product } from '../models/Product.js';
 import { getCached, invalidateByPrefix, setCached } from '../utils/cache.js';
 import { parsePagination } from '../utils/pagination.js';
+import mongoose from 'mongoose';
+
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const sanitizeTag = (value) => value.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '');
 
 export const listProducts = async (query) => {
   const pagination = parsePagination(query);
@@ -10,10 +14,10 @@ export const listProducts = async (query) => {
 
   const filter = { active: true };
   if (query.minPrice || query.maxPrice) filter.basePrice = { ...(query.minPrice && { $gte: Number(query.minPrice) }), ...(query.maxPrice && { $lte: Number(query.maxPrice) }) };
-  if (query.tags) filter.tags = { $in: query.tags.split(',') };
+  if (query.tags) filter.tags = { $in: query.tags.split(',').map(sanitizeTag).filter(Boolean) };
   if (query.rating) filter.rating = { $gte: Number(query.rating) };
-  if (query.q) filter.$text = { $search: query.q };
-  if (query.variantSku) filter['variants.sku'] = query.variantSku;
+  if (query.q) filter.$or = [{ name: new RegExp(escapeRegex(String(query.q)), 'i') }, { description: new RegExp(escapeRegex(String(query.q)), 'i') }, { tags: new RegExp(escapeRegex(String(query.q)), 'i') }];
+  if (query.variantSku) filter['variants.sku'] = String(query.variantSku).replace(/[^a-zA-Z0-9-_]/g, '');
 
   let docs;
   if (pagination.useCursor) {
@@ -44,13 +48,17 @@ export const createProduct = async (payload) => {
 };
 
 export const updateProduct = async (id, payload) => {
-  const product = await Product.findByIdAndUpdate(id, payload, { new: true });
+  if (!mongoose.Types.ObjectId.isValid(id)) return null;
+  const allowed = ['name', 'description', 'tags', 'category', 'basePrice', 'rating', 'variants', 'active'];
+  const updates = Object.fromEntries(Object.entries(payload).filter(([k]) => allowed.includes(k)));
+  const product = await Product.findByIdAndUpdate(new mongoose.Types.ObjectId(id), updates, { new: true });
   await invalidateByPrefix('products:');
   return product;
 };
 
 export const updateVariantStock = async (productId, variantId, stock) => {
-  const product = await Product.findOneAndUpdate({ _id: productId, 'variants._id': variantId }, { $set: { 'variants.$.stock': stock } }, { new: true });
+  if (!mongoose.Types.ObjectId.isValid(productId) || !mongoose.Types.ObjectId.isValid(variantId)) return null;
+  const product = await Product.findOneAndUpdate({ _id: new mongoose.Types.ObjectId(productId), 'variants._id': new mongoose.Types.ObjectId(variantId) }, { $set: { 'variants.$.stock': stock } }, { new: true });
   await invalidateByPrefix('products:');
   return product;
 };

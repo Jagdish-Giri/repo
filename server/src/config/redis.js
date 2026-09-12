@@ -9,7 +9,7 @@ class MemoryRedis {
   async set(k, v) { memory.set(k, v); return 'OK'; }
   async setex(k, ttl, v) { memory.set(k, v); setTimeout(() => memory.delete(k), ttl * 1000); return 'OK'; }
   async del(...keys) { keys.forEach((k) => memory.delete(k)); return 1; }
-  async keys(pattern) { const r = new RegExp(`^${pattern.replace('*', '.*')}$`); return [...memory.keys()].filter((k) => r.test(k)); }
+  async keys(pattern) { const r = new RegExp(`^${pattern.replace(/\*/g, '.*')}$`); return [...memory.keys()].filter((k) => r.test(k)); }
   async quit() { memory = new Map(); }
 }
 
