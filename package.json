@@ -1,0 +1,26 @@
+{
+  "name": "repo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "npm run dev -w server & npm run dev -w client",
+    "dev:server": "npm run dev -w server",
+    "dev:client": "npm run dev -w client",
+    "build": "npm run build -w server && npm run build -w client",
+    "test": "npm run test -w server",
+    "lint": "npm run lint -w client"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://localhost:26831/Jagdish-Giri/repo"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "private": true,
+  "workspaces": [
+    "server",
+    "client"
+  ]
+}

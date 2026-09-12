@@ -1,0 +1,21 @@
+import { Router } from 'express';
+import * as c from '../controllers/adminController.js';
+import { authenticate, requireRole } from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
+import { apiKeySchema, maintenanceSchema, webhookCrudSchema } from '../validators/adminValidators.js';
+
+const r = Router();
+r.use(authenticate, requireRole('admin', 'manager'));
+r.get('/command-center', c.commandCenter);
+r.get('/traffic', c.traffic);
+r.post('/maintenance', validate(maintenanceSchema), c.maintenance);
+r.post('/api-keys', validate(apiKeySchema), c.createApiKey);
+r.get('/api-keys', c.listApiKeys);
+r.post('/api-keys/:id/rotate', c.rotateApiKey);
+r.post('/api-keys/:id/revoke', c.revokeApiKey);
+r.post('/webhooks', validate(webhookCrudSchema), c.createWebhook);
+r.get('/webhooks', c.listWebhooks);
+r.patch('/webhooks/:id', validate(webhookCrudSchema), c.updateWebhook);
+r.delete('/webhooks/:id', c.deleteWebhook);
+r.post('/webhooks/:id/retry', c.retryWebhook);
+export default r;
