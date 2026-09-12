@@ -1,0 +1,4 @@
+:root { font-family: Inter, system-ui, sans-serif; }
+body { margin: 0; background: #0f172a; color: white; }
+input, select, button { margin: 4px; }
+a { color: #bfdbfe; }
